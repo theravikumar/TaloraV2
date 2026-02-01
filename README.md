@@ -1,18 +1,23 @@
-# TaloraV2 - AI-Powered Job Matching Platform
+# Talora - AI-Powered Job Matching Platform
 
-**Stop getting irrelevant job results.** When you search "Machine Learning Engineer", you shouldn't see generic "Data Scientist" roles. TaloraV2 uses AI to understand your actual skills and match you to jobs that truly fit your experience.
+Empowering talent to grow. AI-powered platform that helps you understand your skills, find jobs that truly fit, and grow your career over time.
 
-## What This Does
+## What Talora Does
 
-**For Job Seekers:**
-- Upload your resume, get jobs ranked by actual fit (not just keywords)
-- See exactly which requirements you meet and which skills are missing
-- Save time by focusing only on relevant opportunities
+**Find the right opportunities**
+- Jobs ranked by real fit, not just keywords
+- Understand exactly which requirements you meet
+- See your strengths and gaps clearly
 
-**The Technology:**
-- Uses LLMs (Groq/Gemini) to deeply understand resumes and job requirements
-- Semantic matching engine compares your actual experience vs job needs
-- Ranks thousands of jobs by true relevance, not keyword matching
+**Improve continuously**
+- Get insights to strengthen your resume
+- Know where you stand in the market
+- Focus on relevant opportunities, skip the noise
+
+**Works for everyone**
+- Backend, Frontend, ML, DevOps, Design, Product - all domains
+- Junior to senior levels
+- Technical and non-technical roles
 
 ## Quick Start
 
