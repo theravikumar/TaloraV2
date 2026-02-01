@@ -2,12 +2,14 @@
 
 ## High-Level Overview
 
+**Core Value:** Semantic understanding of skills and requirements, not keyword matching.
+
 ```
-[Resume PDF] → [Resume Normalizer] → [Structured Resume]
-                                            ↓
-                                      [Matcher] ← [Job Database]
-                                            ↓
-                                    [Ranked Jobs + Gaps]
+[Resume PDF] → [AI Parser] → [Skills & Experience Graph]
+                                      ↓
+                              [Semantic Matcher] ← [Job Requirements]
+                                      ↓
+                              [Ranked by True Fit + Gap Analysis]
 ```
 
 ## Component Details

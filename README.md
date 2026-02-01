@@ -1,13 +1,18 @@
 # TaloraV2 - AI-Powered Job Matching Platform
 
-An intelligent job matching system that uses LLMs and embeddings to match candidates with relevant job opportunities across India, US, and Europe.
+**Stop getting irrelevant job results.** When you search "Machine Learning Engineer", you shouldn't see generic "Data Scientist" roles. TaloraV2 uses AI to understand your actual skills and match you to jobs that truly fit your experience.
 
 ## What This Does
 
-- Scrapes 2000+ jobs daily from multiple free sources (LinkedIn, RemoteOK, ArbeitNow)
-- Extracts structured data from resumes using AI
-- Matches candidates to jobs using semantic similarity
-- Ranks jobs by relevance with explanation of gaps
+**For Job Seekers:**
+- Upload your resume, get jobs ranked by actual fit (not just keywords)
+- See exactly which requirements you meet and which skills are missing
+- Save time by focusing only on relevant opportunities
+
+**The Technology:**
+- Uses LLMs (Groq/Gemini) to deeply understand resumes and job requirements
+- Semantic matching engine compares your actual experience vs job needs
+- Ranks thousands of jobs by true relevance, not keyword matching
 
 ## Quick Start
 
@@ -40,13 +45,12 @@ uv run python scripts/demo_resume_matching.py data/resumes/your_resume.pdf
 
 ## Key Features
 
-### Free Job Collection (0 USD cost)
-- LinkedIn Guest API: 300+ jobs per region
-- RemoteOK API: 1000+ remote jobs
-- ArbeitNow API: 500+ European jobs
-- Multi-region support: India, US, Europe
+### Intelligent Matching (Not Just Keywords)
+- Understands context: "built RAG systems" matches "LLM application development"
+- Domain-aware: distinguishes ML engineering from data science
+- Proficiency-based: matches junior vs senior requirements accurately
 
-### AI-Powered Matching
+### Comprehensive Job Coverage
 - Resume parsing with LLM (Groq/Gemini)
 - Semantic matching using embeddings
 - Domain/skill/proficiency aware scoring
