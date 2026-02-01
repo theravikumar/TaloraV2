@@ -23,19 +23,41 @@ Empowering talent to grow. AI-powered platform that helps you understand your sk
 
 ### 1. Prerequisites
 
-- Python 3.10+
-- uv package manager
+- Python 3.11+
+- **uv** (recommended) OR **pip**
 
 ### 2. Installation
 
+**Option A: Using uv (Recommended)**
 ```bash
 # Clone repository
-git clone <your-repo-url>
+git clone https://github.com/theravikumar/TaloraV2.git
 cd TaloraV2
+
+# Install uv if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install dependencies
 uv sync
+```
 
+**Option B: Using pip**
+```bash
+# Clone repository
+git clone https://github.com/theravikumar/TaloraV2.git
+cd TaloraV2
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 3. Configuration
+
+```bash
 # Set up environment variables
 cp .env.example .env
 # Edit .env and add your API keys (Groq is required, free tier available)
