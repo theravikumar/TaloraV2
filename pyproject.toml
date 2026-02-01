@@ -19,6 +19,23 @@ dependencies = [
     "pypdf>=3.0.0",
     "requests>=2.31.0",
     "pypdf2>=3.0.1",
+    # FastAPI Backend
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-multipart>=0.0.6",
+    # Database
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "psycopg2-binary>=2.9.9",
+    "redis>=5.0.0",
+    # Security
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    # Utils
+    "python-magic>=0.4.27",
+    "bcrypt>=5.0.0",
+    "pydantic-settings>=2.12.0",
+    "email-validator>=2.3.0",
 ]
 
 [project.optional-dependencies]
