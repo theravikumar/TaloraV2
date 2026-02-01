@@ -64,7 +64,7 @@ class JobService:
         jobs = []
         for row in rows:
             jobs.append({
-                "job_id": row["id"],
+                "job_id": row["job_id"],
                 "job_title": row["job_title"],
                 "company_name": row["company_name"],
                 "location": row["location"],
@@ -93,7 +93,7 @@ class JobService:
             return None
         
         return {
-            "job_id": row["id"],
+            "job_id": row["job_id"],
             "job_title": row["job_title"],
             "company_name": row["company_name"],
             "location": row["location"],
@@ -116,7 +116,7 @@ class JobService:
         jobs = []
         for row in rows:
             jobs.append({
-                "id": row["id"],
+                "id": row["job_id"],
                 "job_title": row["job_title"],
                 "company_name": row["company_name"],
                 "location": row["location"],
