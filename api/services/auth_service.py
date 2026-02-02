@@ -13,13 +13,25 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
-    return pwd_context.hash(password)
+    """Hash password using bcrypt
+    
+    Note: bcrypt has a 72-byte limit. Passwords are truncated to ensure
+    compatibility and prevent ValueError.
+    """
+    # Truncate to 72 bytes to comply with bcrypt limitation
+    password_bytes = password.encode('utf-8')[:72]
+    return pwd_context.hash(password_bytes)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password against hash
+    
+    Note: bcrypt has a 72-byte limit. Passwords are truncated to match
+    the truncation applied during hashing.
+    """
+    # Truncate to 72 bytes to match hash_password behavior
+    password_bytes = plain_password.encode('utf-8')[:72]
+    return pwd_context.verify(password_bytes, hashed_password)
 
 
 def register_user(db: Session, email: str, password: str) -> User:
