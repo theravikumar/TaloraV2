@@ -2,24 +2,36 @@
 """
 Authentication service
 """
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from sqlalchemy.orm import Session
 from api.database.models import User
 from api.utils.errors import AuthenticationError, ERROR_MESSAGES
 from api.utils.jwt import create_access_token
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with Argon2 (more secure, no byte limits)
+ph = PasswordHasher()
 
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt"""
-    return pwd_context.hash(password)
+    """Hash password using Argon2
+    
+    Argon2 is the winner of the Password Hashing Competition and is
+    recommended by OWASP for password storage.
+    """
+    return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password against hash
+    
+    Returns True if password matches, False otherwise.
+    """
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except VerifyMismatchError:
+        return False
 
 
 def register_user(db: Session, email: str, password: str) -> User:

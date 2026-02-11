@@ -42,35 +42,24 @@ async def parse_resume_task(job_id: str, file_path: Path, session_id: str = None
         # Initialize resume normalizer
         normalizer = ResumeNormalizer()
         
-        # Parse resume with LLM fallback
-        parsed_resume = None
-        last_error = None
-        
-        # Try each LLM provider
-        for provider_name in ["groq", "gemini", "ollama"]:
-            try:
-                logger.info(f"Trying {provider_name} for resume parsing")
+        # Parse resume with LLM (router handles fallbacks automatically)
+        try:
+            logger.info("Attempting resume parsing with LLM router")
+            
+            # Parse resume (router tries: Gemini → Ollama automatically)
+            parsed_resume = await asyncio.to_thread(
+                normalizer.normalize_from_pdf,
+                str(file_path)
+            )
+            
+            if parsed_resume:
+                logger.info("Resume parsed successfully")
+            else:
+                raise ParsingError("Resume normalizer returned empty result")
                 
-                # Set provider in router
-                llm_router.set_provider(provider_name)
-                
-                # Parse resume
-                parsed_resume = await asyncio.to_thread(
-                    normalizer.normalize_from_file,
-                    str(file_path)
-                )
-                
-                if parsed_resume:
-                    logger.info(f"Resume parsed successfully with {provider_name}")
-                    break
-                    
-            except Exception as e:
-                logger.warning(f"{provider_name} failed: {str(e)}")
-                last_error = e
-                continue
-        
-        if not parsed_resume:
-            raise ParsingError(f"All LLM providers failed: {str(last_error)}")
+        except Exception as e:
+            logger.error(f"Resume parsing failed: {str(e)}")
+            raise ParsingError(f"Failed to parse resume: {str(e)}")
         
         # Calculate file hash
         with open(file_path, "rb") as f:
