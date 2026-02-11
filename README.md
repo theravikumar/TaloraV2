@@ -121,24 +121,6 @@ TaloraV2/
 - **Vector Store**: FAISS
 - **Job Sources**: LinkedIn Guest API, RemoteOK, ArbeitNow
 
-## Current Status
-
-- Batch 1: Foundation - COMPLETE
-- Batch 2: Job Pipeline - COMPLETE  
-- Batch 3: Matching Engine - COMPLETE
-- Batch 4: Production API - PLANNED
-
-## Team
-
-Lead: Ravi Kumar (ML Engineer, 3.5 years)
-- LinkedIn scraping & free API integration
-- Resume parsing with LLMs
-- Semantic matching algorithm
-
-## License
-
-MIT License (or your preferred license)
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

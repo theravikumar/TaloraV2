@@ -2,36 +2,36 @@
 """
 Authentication service
 """
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 from sqlalchemy.orm import Session
 from api.database.models import User
 from api.utils.errors import AuthenticationError, ERROR_MESSAGES
 from api.utils.jwt import create_access_token
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing with Argon2 (more secure, no byte limits)
+ph = PasswordHasher()
 
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt
+    """Hash password using Argon2
     
-    Note: bcrypt has a 72-byte limit. Passwords are truncated to ensure
-    compatibility and prevent ValueError.
+    Argon2 is the winner of the Password Hashing Competition and is
+    recommended by OWASP for password storage.
     """
-    # Truncate to 72 bytes to comply with bcrypt limitation
-    password_bytes = password.encode('utf-8')[:72]
-    return pwd_context.hash(password_bytes)
+    return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash
     
-    Note: bcrypt has a 72-byte limit. Passwords are truncated to match
-    the truncation applied during hashing.
+    Returns True if password matches, False otherwise.
     """
-    # Truncate to 72 bytes to match hash_password behavior
-    password_bytes = plain_password.encode('utf-8')[:72]
-    return pwd_context.verify(password_bytes, hashed_password)
+    try:
+        ph.verify(hashed_password, plain_password)
+        return True
+    except VerifyMismatchError:
+        return False
 
 
 def register_user(db: Session, email: str, password: str) -> User:

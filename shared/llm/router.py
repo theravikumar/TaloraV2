@@ -125,11 +125,19 @@ class LLMRouter:
         max_tokens: int,
     ) -> str:
         """
-        Route high-quality tasks: Gemini (accurate) → Ollama (offline)
+        Route high-quality tasks: Groq (fast) → Gemini (accurate) → Ollama (offline)
         """
         errors = []
         
-        # Try Gemini first (most accurate for resume/matching)
+        # Try Groq first (fastest, works well for structured extraction)
+        if self.groq:
+            try:
+                return self.groq.complete(prompt, system_prompt, temperature, max_tokens)
+            except Exception as e:
+                errors.append(f"Groq failed: {e}")
+                print(f"Groq failed, falling back to Gemini...")
+        
+        # Try Gemini second (most accurate for resume/matching)
         if self.gemini:
             try:
                 return self.gemini.complete(prompt, system_prompt, temperature, max_tokens)
@@ -137,7 +145,7 @@ class LLMRouter:
                 errors.append(f"Gemini failed: {e}")
                 print(f"Gemini failed, falling back to Ollama...")
         
-        # Fallback to Ollama
+        # Fallback to Ollama (offline, always available)
         if self.ollama:
             try:
                 return self.ollama.complete(prompt, system_prompt, temperature, max_tokens)
