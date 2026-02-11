@@ -1,73 +1,41 @@
-# Ignore Python cache
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Virtual environments
-venv/
-env/
-ENV/
-.venv
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# uv
-.uv/
+# testing
+/coverage
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# next.js
+/.next/
+/out/
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+# production
+/build
 
-# Data files (don't commit actual resumes/jobs for privacy)
-data/resumes/*.pdf
-data/match_results/*
-data/*.db
-data/*.faiss
-data/ml_test_jobs.json
-data/ml_jobs_detailed.json
-data/ravi_resume_normalized.json
-data/final_match_results.json
-data/match_results.json
-
-# But keep example files
-!data/resumes/.gitkeep
-!data/match_results/.gitkeep
-
-# Logs
-*.log
-logs/
-
-# OS
+# misc
 .DS_Store
-Thumbs.db
+*.pem
 
-# Artifacts (internal planning docs)
-.gemini/
-brain/
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Test coverage
-.coverage
-htmlcov/
-.pytest_cache/
+# env files (can opt-in for committing if needed)
+.env*
 
-# Build
-dist/
-build/
-*.egg-info/
+# vercel
+.vercel
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
-
-# Temporary files
-tmp/
-temp/
-*.tmp
+# typescript
+*.tsbuildinfo
+next-env.d.ts

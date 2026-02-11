@@ -1,0 +1,58 @@
+const jobs = [
+  {
+    title: 'Senior Full Stack Developer',
+    company: 'TechCorp',
+    location: 'San Francisco, CA',
+    salary: '$120k - $180k',
+    type: 'Remote',
+    posted: '2 days ago',
+    tags: ['React', 'Node.js', 'TypeScript'],
+  },
+  {
+    title: 'Product Designer',
+    company: 'DesignHub',
+    location: 'London, UK',
+    salary: '£60k - £90k',
+    type: 'Hybrid',
+    posted: '1 day ago',
+    tags: ['Figma', 'UI/UX', 'Prototyping'],
+  },
+  {
+    title: 'Data Scientist',
+    company: 'DataMinds',
+    location: 'Berlin, Germany',
+    salary: '€70k - €100k',
+    type: 'On-site',
+    posted: '3 days ago',
+    tags: ['Python', 'ML', 'TensorFlow'],
+  },
+  {
+    title: 'Marketing Manager',
+    company: 'GrowthLab',
+    location: 'New York, NY',
+    salary: '$90k - $130k',
+    type: 'Remote',
+    posted: '1 week ago',
+    tags: ['SEO', 'Content', 'Analytics'],
+  },
+  {
+    title: 'DevOps Engineer',
+    company: 'CloudScale',
+    location: 'Singapore',
+    salary: '$100k - $150k',
+    type: 'Hybrid',
+    posted: '4 days ago',
+    tags: ['AWS', 'Docker', 'Kubernetes'],
+  },
+  {
+    title: 'Sales Director',
+    company: 'SalesForce Pro',
+    location: 'Toronto, Canada',
+    salary: '$110k - $160k',
+    type: 'On-site',
+    posted: '5 days ago',
+    tags: ['B2B', 'SaaS', 'Leadership'],
+  },
+]
+
+export default jobs
