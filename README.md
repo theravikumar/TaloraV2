@@ -96,6 +96,4 @@ uv run python scripts/demo_resume_matching.py data/resumes/your_resume.pdf
 - **Vector Store**: FAISS
 - **Job Sources**: LinkedIn Guest API, RemoteOK, ArbeitNow
 
-## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
