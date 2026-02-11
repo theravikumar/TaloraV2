@@ -71,3 +71,4 @@ build/
 tmp/
 temp/
 *.tmp
+*.md
