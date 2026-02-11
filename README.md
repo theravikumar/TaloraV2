@@ -88,31 +88,6 @@ uv run python scripts/demo_resume_matching.py data/resumes/your_resume.pdf
 - FAISS vector store for fast similarity search
 - Modular architecture for easy scaling
 
-## Project Structure
-
-```
-TaloraV2/
-├── job_pipeline/          # Job scraping and normalization
-│   ├── scrapers/          # LinkedIn, RemoteOK, ArbeitNow
-│   ├── normalizers/       # LLM-based job parsing
-│   └── storage/           # Database and embeddings
-├── match_engine/          # Resume matching logic
-│   ├── resume/            # Resume parsing
-│   └── matcher/           # Matching algorithms
-├── shared/                # Common utilities
-│   ├── llm/               # LLM clients (Groq, Gemini, Ollama)
-│   ├── embeddings/        # Sentence transformers
-│   └── schema/            # Data models
-├── scripts/               # Utility scripts
-└── data/                  # Local data storage
-```
-
-## Documentation
-
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design and code flow
-- [DEVELOPMENT.md](DEVELOPMENT.md) - How to run, test, and develop
-- [HOW_TO_TEST.md](HOW_TO_TEST.md) - Testing with different resumes
-
 ## Technology Stack
 
 - **LLMs**: Groq (primary), Gemini (fallback), Ollama (offline)
