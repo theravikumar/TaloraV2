@@ -4,68 +4,127 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getJobs } from "../lib/api";
 import { LoadingSpinner, ErrorMessage } from "../components/UI";
+import Autocomplete from "../components/Autocomplete";
 
 export default function JobsPage() {
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [filters, setFilters] = useState({
-    keywords: searchParams.get("keywords") || "",
-    location: searchParams.get("location") || "",
-    domain: searchParams.get("domain") || "",
+
+  // Check for smart search mode
+  const smartMode = searchParams.get("mode") === "smart";
+  const matchIds = searchParams.get("match_ids")?.split(",").filter(Boolean) || [];
+  const summary = searchParams.get("summary") || "";
+
+  // Initialize filters directly from URL to avoid initial "All jobs" fetch
+  const [filters, setFilters] = useState(() => {
+    const keywordsParam = searchParams.get("keywords");
+    const locationParam = searchParams.get("location");
+    const employmentParam = searchParams.get("employment_type");
+
+    return {
+      keywords: keywordsParam ? keywordsParam.split(",") : [],
+      locations: locationParam ? locationParam.split(",") : [],
+      employmentType: employmentParam || "",
+    };
   });
+
   const [pagination, setPagination] = useState({
     limit: 20,
     offset: 0,
     total: 0,
   });
 
+  // Sync state when URL params change (e.g. back/forward button)
+  useEffect(() => {
+    const keywordsParam = searchParams.get("keywords");
+    const locationParam = searchParams.get("location");
+    const employmentParam = searchParams.get("employment_type");
+
+    const newFilters = {
+      keywords: keywordsParam ? keywordsParam.split(",") : [],
+      locations: locationParam ? locationParam.split(",") : [],
+      employmentType: employmentParam || "",
+    };
+
+    // Only update if different to avoid infinite loops or unnecessary re-renders
+    if (JSON.stringify(newFilters) !== JSON.stringify(filters)) {
+      setFilters(newFilters);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     fetchJobs();
-  }, [filters, pagination.offset]);
+  }, [filters, pagination.offset, smartMode, matchIds.join(",")]);
 
   async function fetchJobs() {
     setLoading(true);
     setError("");
     try {
-      const params = {
-        keywords: filters.keywords || undefined,
-        location: filters.location || undefined,
-        domain: filters.domain || undefined,
-        limit: pagination.limit,
-        offset: pagination.offset,
-      };
+      // In smart search mode, filter by match_ids
+      if (smartMode && matchIds.length > 0) {
+        const params = {
+          ids: matchIds.join(","),
+          limit: pagination.limit,
+          offset: pagination.offset,
+        };
 
-      // Remove undefined values
-      Object.keys(params).forEach(
-        (key) => params[key] === undefined && delete params[key]
-      );
+        Object.keys(params).forEach(
+          (key) => params[key] === undefined && delete params[key]
+        );
 
-      const response = await getJobs(params);
-      
-      // Validate response structure
-      if (!response) {
-        throw new Error("Invalid response from server");
-      }
-      
-      setJobs(response.jobs || []);
-      setPagination((prev) => ({
-        ...prev,
-        total: response.total || 0,
-      }));
-      
-      // Provide feedback if no results
-      if (!response.jobs || response.jobs.length === 0) {
-        if (filters.keywords || filters.location || filters.domain) {
-          setError(
-            `No jobs found matching your filters. Try adjusting your search criteria.`
-          );
+        const response = await getJobs(params);
+
+        if (!response) {
+          throw new Error("Invalid response from server");
+        }
+
+        setJobs(response.jobs || []);
+        setPagination((prev) => ({
+          ...prev,
+          total: response.total || matchIds.length,
+        }));
+      } else {
+        // Regular search mode
+        const params = {
+          keywords: filters.keywords.length > 0 ? filters.keywords.join(",") : undefined,
+          location: filters.locations.length > 0 ? filters.locations.join(",") : undefined,
+          employment_type: filters.employmentType || undefined,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        };
+
+        // Remove undefined values
+        Object.keys(params).forEach(
+          (key) => params[key] === undefined && delete params[key]
+        );
+
+        const response = await getJobs(params);
+
+        // Validate response structure
+        if (!response) {
+          throw new Error("Invalid response from server");
+        }
+
+        setJobs(response.jobs || []);
+        setPagination((prev) => ({
+          ...prev,
+          total: response.total || 0,
+        }));
+
+        // Provide feedback if no results
+        if (!response.jobs || response.jobs.length === 0) {
+          if (filters.keywords.length > 0 || filters.locations.length > 0 || filters.employmentType) {
+            setError(
+              `No jobs found matching your filters. Try adjusting your search criteria.`
+            );
+          }
         }
       }
     } catch (err) {
       console.error("Error fetching jobs:", err);
-      
+
       // Provide specific error messages
       let errorMessage = "Failed to load jobs. Please try again.";
       if (err.message.includes("401")) {
@@ -77,7 +136,7 @@ export default function JobsPage() {
       } else {
         errorMessage = err.message || errorMessage;
       }
-      
+
       setError(errorMessage);
       setJobs([]);
     } finally {
@@ -87,18 +146,7 @@ export default function JobsPage() {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    
-    // Validate input length for keyword searches
-    if (name === "keywords" && value.trim().length > 100) {
-      setError("Search term cannot exceed 100 characters");
-      return;
-    }
-    
-    // Clear error when user starts typing
-    if (value.trim()) {
-      setError("");
-    }
-    
+
     setFilters((prev) => ({
       ...prev,
       [name]: value,
@@ -117,59 +165,93 @@ export default function JobsPage() {
           <h1 className="text-4xl font-bold text-white mb-2">Job Listings</h1>
           <p className="text-slate-400">
             {pagination.total} jobs found{" "}
-            {filters.keywords && `for "${filters.keywords}"`}
+            {filters.keywords.length > 0 && `for "${filters.keywords.join(", ")}"`}
           </p>
         </div>
 
+        {/* Smart Search Mode Banner */}
+        {smartMode && matchIds.length > 0 && (
+          <div className="bg-gradient-to-r from-cyan-500/20 to-purple-600/20 border border-cyan-500/30 rounded-lg p-4 mb-6 backdrop-blur">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🎯</span>
+              <div>
+                <h3 className="text-white font-semibold mb-1">Smart Match Results</h3>
+                <p className="text-slate-300 text-sm">
+                  Showing {matchIds.length} AI-matched jobs based on your {summary ? "profile" : "resume"}.
+                  {summary && <span className="block mt-1 text-slate-400 italic">"{summary.slice(0, 100)}{summary.length > 100 ? "..." : ""}"</span>}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Employment Type Filter Buttons */}
+        <div className="flex justify-center gap-3 mb-6">
+          {["All", "Full-time", "Contract", "Freelance", "Working student"].map((item) => (
+            <button
+              key={item}
+              onClick={() => {
+                setFilters((prev) => ({ ...prev, employmentType: item === "All" ? "" : item }));
+                setPagination((prev) => ({ ...prev, offset: 0 }));
+              }}
+              className={`px-5 py-2 text-sm rounded-full border border-white/20 backdrop-blur transition shadow-sm ${(item === "All" && !filters.employmentType) || filters.employmentType === item
+                ? "bg-cyan-500 text-white border-cyan-400"
+                : "bg-white/10 hover:bg-white/20 text-white"
+                }`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+
         {/* Filters */}
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 mb-8">
+        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-6 mb-8 overflow-visible">
           <h3 className="text-white font-semibold mb-4">Filters</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                Keywords
+                Job Role / Skill
               </label>
-              <input
-                type="text"
-                name="keywords"
-                value={filters.keywords}
-                onChange={handleFilterChange}
-                placeholder="Job title, skills..."
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition"
+              <Autocomplete
+                placeholder="Select job titles or skills..."
+                apiEndpoint="http://localhost:8000/api/autocomplete/job-titles"
+                selectedValues={filters.keywords}
+                onChange={(values) => {
+                  setFilters(prev => ({ ...prev, keywords: values }));
+                  setPagination(prev => ({ ...prev, offset: 0 }));
+                }}
               />
             </div>
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                Location
+                Locations
               </label>
-              <input
-                type="text"
-                name="location"
-                value={filters.location}
-                onChange={handleFilterChange}
-                placeholder="City, country..."
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition"
+              <Autocomplete
+                placeholder="Select locations..."
+                apiEndpoint="http://localhost:8000/api/autocomplete/locations"
+                selectedValues={filters.locations}
+                onChange={(values) => {
+                  setFilters(prev => ({ ...prev, locations: values }));
+                  setPagination(prev => ({ ...prev, offset: 0 }));
+                }}
               />
             </div>
             <div>
               <label className="block text-slate-300 text-sm font-medium mb-2">
-                Domain
+                Employment Type
               </label>
               <select
-                name="domain"
-                value={filters.domain}
+                name="employmentType"
+                value={filters.employmentType}
                 onChange={handleFilterChange}
                 className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition"
               >
-                <option value="">All Domains</option>
-                <option value="engineering">Engineering</option>
-                <option value="design">Design</option>
-                <option value="product">Product</option>
-                <option value="sales">Sales</option>
-                <option value="marketing">Marketing</option>
-                <option value="data">Data Science</option>
-                <option value="finance">Finance</option>
-                <option value="hr">Human Resources</option>
+                <option value="" className="bg-slate-800">All Types</option>
+                <option value="full-time" className="bg-slate-800">Full-time</option>
+                <option value="Contract" className="bg-slate-800">Contract</option>
+                <option value="Freelance" className="bg-slate-800">Freelance</option>
+                <option value="Working student" className="bg-slate-800">Working Student</option>
+                <option value="Internship" className="bg-slate-800">Internship</option>
               </select>
             </div>
           </div>
@@ -190,10 +272,10 @@ export default function JobsPage() {
                   href={`/jobs/${job.job_id || job.id}`}
                   className="block"
                 >
-                  <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-lg hover:bg-white/20 transition duration-200 cursor-pointer">
+                  <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-lg hover:bg-white/20 transition duration-200 cursor-pointer relative group">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 className="text-lg font-semibold text-white group-hover:text-cyan-400 transition">
                           {job.job_title}
                         </h3>
                         <p className="text-slate-300 text-sm">
@@ -206,9 +288,29 @@ export default function JobsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-4 text-slate-400 text-sm">
+                    <div className="flex gap-4 text-slate-400 text-sm mt-2 mb-4">
                       <span>📍 {job.location || "Remote"}</span>
                       <span>📋 {job.requirements_count || "N/A"} requirements</span>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-4 border-t border-white/10 pt-4">
+                      <span className="text-xs text-slate-500">Posted {new Date(job.posted_date || Date.now()).toLocaleDateString()}</span>
+
+                      {/* Apply Button - Stops propagation to prevent navigation */}
+                      {job.job_url ? (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(job.job_url, "_blank", "noopener,noreferrer");
+                          }}
+                          className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-cyan-500/30 transition-all transform hover:-translate-y-0.5"
+                        >
+                          Apply Now ↗
+                        </button>
+                      ) : (
+                        <span className="text-sm text-slate-500 italic">No direct apply link</span>
+                      )}
                     </div>
                   </div>
                 </Link>

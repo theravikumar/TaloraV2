@@ -1,2 +1,2 @@
-import JobDetailPage from "./[id]";
+import JobDetailPage from "../[id]";
 export default JobDetailPage;

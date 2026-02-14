@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { uploadResume, getResumeStatus, matchResume } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { LoadingSpinner, ErrorMessage, SuccessMessage, InfoMessage } from "../components/UI";
 
@@ -17,15 +16,12 @@ export default function ResumePage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [jobId, setJobId] = useState(""); // ParsingJob ID
-  const [resumeId, setResumeId] = useState(""); // Actual Resume ID
-  const [status, setStatus] = useState(null);
+  const [status, setStatus] = useState(null); // { status: "pending" | "processing" | "completed" | "failed", ... }
   const [statusMessage, setStatusMessage] = useState("");
   const [matches, setMatches] = useState([]);
-  const [matchLoading, setMatchLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [checkStatusInterval, setCheckStatusInterval] = useState(null);
+  const [parsedSummary, setParsedSummary] = useState("");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -33,18 +29,6 @@ export default function ResumePage() {
       router.push("/auth?redirect=/resume");
     }
   }, [isAuthenticated, authLoading, router]);
-
-  // Auto-check status periodically
-  useEffect(() => {
-    if (status?.status === "pending" && jobId) {
-      const interval = setInterval(() => {
-        checkStatus();
-      }, 2000);
-      setCheckStatusInterval(interval);
-      return () => clearInterval(interval);
-    }
-    return () => checkStatusInterval && clearInterval(checkStatusInterval);
-  }, [status?.status, jobId]);
 
   async function handleUpload(e) {
     e.preventDefault();
@@ -54,29 +38,8 @@ export default function ResumePage() {
     }
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt'];
-    
-    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!allowedExtensions.includes(fileExtension)) {
-      setError(`Invalid file type. Supported formats: PDF, DOC, DOCX, TXT`);
-      setFile(null);
-      return;
-    }
-
-    // Validate file size (5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      setError(`File is too large (${sizeMB}MB). Maximum allowed size is 5MB.`);
-      setFile(null);
-      return;
-    }
-
-    // Validate minimum file size (100 bytes)
-    if (file.size < 100) {
-      setError("File is too small. Please upload a valid resume.");
-      setFile(null);
+    if (file.type !== "application/pdf") {
+      setError("Please upload a PDF file. Other formats coming soon!");
       return;
     }
 
@@ -85,141 +48,84 @@ export default function ResumePage() {
     setSuccess("");
     setStatus(null);
     setMatches([]);
-    setResumeId(""); // Reset resume ID
+    setParsedSummary("");
 
     try {
-      const res = await uploadResume(file);
-      
-      setStatus(res);
-      setJobId(res.job_id || "");
-      // Extract resume ID if already completed
-      if (res.resume?.resume_id) {
-        setResumeId(res.resume.resume_id);
+      // Import API functions dynamically to ensure latest version
+      const { searchByResume, getSmartSearchStatus } = await import("../lib/api");
+
+      // 1. Upload and parse resume immediately
+      // This uses the new Smart Search API which is more robust
+      const result = await searchByResume(file, 10);
+
+      // Handle immediate success (cached or fast processing)
+      if (result.status === "completed" && result.matches) {
+        setMatches(result.matches);
+        setStatus({ status: "completed" });
+
+        let summaryText = "Resume processed successfully.";
+        if (result.result && result.result.skills && result.result.skills.length > 0) {
+          summaryText += ` Detected skills: ${result.result.skills.join(", ")}.`;
+        }
+        setParsedSummary(summaryText);
+        setSuccess(`Found ${result.matches.length} matching jobs!`);
+        setUploading(false);
       }
-      setStatusMessage(STATUS_MESSAGES[res.status]);
-      
-      if (res.status === "completed") {
-        setSuccess("Resume uploaded and processed successfully!");
+      // Handle async processing
+      else if (result.status === "processing") {
+        setStatus({ status: "processing" });
+        setStatusMessage("Analyzing your resume... This may take up to 30 seconds.");
+
+        const jobId = result.job_id;
+        let attempts = 0;
+        const maxAttempts = 30; // 30 seconds max
+
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const statusRes = await getSmartSearchStatus(jobId, 10);
+
+            if (statusRes.status === "completed") {
+              clearInterval(pollInterval);
+
+              setMatches(statusRes.matches || []);
+              setStatus({ status: "completed" });
+
+              let summaryText = "Resume processed successfully.";
+              if (statusRes.result && statusRes.result.skills && statusRes.result.skills.length > 0) {
+                summaryText += ` Detected skills: ${statusRes.result.skills.join(", ")}.`;
+              }
+              setParsedSummary(summaryText);
+              setSuccess(`Found ${statusRes.matches?.length || 0} matching jobs!`);
+              setUploading(false);
+
+            } else if (statusRes.status === "failed" || attempts >= maxAttempts) {
+              clearInterval(pollInterval);
+              setError("Resume processing failed or timed out. Please try again.");
+              setStatus({ status: "failed" });
+              setUploading(false);
+            }
+          } catch (err) {
+            clearInterval(pollInterval);
+            console.error("Polling error:", err);
+            // Don't fail immediately on polling error, might be temporary
+            if (attempts >= maxAttempts) {
+              setError("Error checking status: " + err.message);
+              setUploading(false);
+            }
+          }
+        }, 1000); // Poll every second
       } else {
-        setStatusMessage("Processing your resume... This may take a minute.");
+        // Fallback for unexpected status
+        throw new Error("Unexpected response from server");
       }
+
     } catch (err) {
       console.error("Upload error:", err);
-      
-      // Provide specific error messages
       let errorMessage = "Failed to upload resume. Please try again.";
-      if (err.message.includes("413")) {
-        errorMessage = "File is too large. Maximum size is 5MB.";
-      } else if (err.message.includes("400")) {
-        errorMessage = "Invalid file format. Please upload a valid resume.";
-      } else if (err.message.includes("401")) {
-        errorMessage = "Your session has expired. Please log in again.";
-      } else if (err.message.includes("timeout")) {
-        errorMessage = "Upload took too long. Please try again.";
-      } else if (err.message.includes("network")) {
-        errorMessage = "Network error. Please check your connection.";
-      } else {
-        errorMessage = err.message || errorMessage;
-      }
-      
+      if (err.message) errorMessage = err.message;
       setError(errorMessage);
-    } finally {
       setUploading(false);
-      setFile(null);
-    }
-  }
-
-  async function checkStatus() {
-    if (!jobId) {
-      setError("Job ID not found. Please upload a resume first.");
-      return;
-    }
-    
-    setError("");
-    
-    try {
-      const res = await getResumeStatus(jobId);
-      
-      if (!res) {
-        throw new Error("Invalid response from server");
-      }
-      
-      setStatus(res);
-      setStatusMessage(STATUS_MESSAGES[res.status] || "Processing...");
-      
-      // Extract resume_id when parsing completes
-      if (res.status === "completed" && res.resume?.resume_id && !resumeId) {
-        setResumeId(res.resume.resume_id);
-      }
-      
-      if (res.status === "completed" && !success) {
-        setSuccess("Resume processing complete!");
-      }
-      
-      if (res.status === "failed") {
-        const errorDetail = res.error || "Resume processing failed. Please check your file and try uploading again.";
-        setError(errorDetail);
-      }
-    } catch (err) {
-      console.error("Status check error:", err);
-      
-      // Only show error if it's not a network timeout (which happens during polling)
-      if (!err.message.includes("timeout")) {
-        const errorMessage = err.message.includes("404") 
-          ? "Resume processing job not found. Please upload again."
-          : err.message || "Failed to check status. Please try again.";
-        
-        setError(errorMessage);
-      }
-    }
-  }
-
-  async function handleMatch() {
-    if (!resumeId) {
-      setError("Resume ID not found. Please ensure resume processing is complete. Try uploading your resume again.");
-      return;
-    }
-
-    if (!status || status.status !== "completed") {
-      setError("Resume is not ready for matching. Please wait for processing to complete.");
-      return;
-    }
-
-    setError("");
-    setMatchLoading(true);
-    
-    try {
-      const res = await matchResume(resumeId, {}, 10);
-      const matchList = res.matches || [];
-      setMatches(matchList);
-      
-      if (matchList.length === 0) {
-        setStatusMessage("No matching jobs found at the moment. Try searching manually in the Jobs section or upload an updated resume.");
-      } else {
-        setSuccess(`Found ${matchList.length} matching job${matchList.length === 1 ? '' : 's'}!`);
-      }
-    } catch (err) {
-      console.error("Match error:", err);
-      
-      // Provide specific error messages
-      let errorMessage = "Failed to find matching jobs. Please try again.";
-      if (err.message.includes("401")) {
-        errorMessage = "Your session has expired. Please log in again.";
-      } else if (err.message.includes("404")) {
-        errorMessage = "Resume not found. Please upload your resume again.";
-      } else if (err.message.includes("500")) {
-        errorMessage = "Server error. Please try again later.";
-      } else if (err.message.includes("timeout")) {
-        errorMessage = "Request timed out. Please try again.";
-      } else if (err.message.includes("network")) {
-        errorMessage = "Network error. Please check your connection.";
-      } else {
-        errorMessage = err.message || errorMessage;
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setMatchLoading(false);
     }
   }
 
@@ -270,7 +176,7 @@ export default function ResumePage() {
             <div className="relative">
               <input
                 type="file"
-                accept=".pdf,.doc,.docx,.txt"
+                accept=".pdf"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="hidden"
                 id="file-input"
@@ -285,7 +191,7 @@ export default function ResumePage() {
                     {file ? file.name : "📄 Click to upload or drag and drop"}
                   </p>
                   <p className="text-sm text-slate-400">
-                    PDF, DOC, DOCX, or TXT (Max 5MB)
+                    PDF Only (Max 5MB)
                   </p>
                 </div>
               </label>
@@ -293,14 +199,17 @@ export default function ResumePage() {
 
             {/* Upload Button */}
             {uploading ? (
-              <LoadingSpinner />
+              <div className="flex flex-col items-center justify-center py-4">
+                <LoadingSpinner />
+                <p className="text-slate-300 mt-2">{statusMessage || "Uploading..."}</p>
+              </div>
             ) : (
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!file || uploading}
               >
-                {uploading ? "Uploading..." : "Upload Resume"}
+                Upload & Find Matches
               </button>
             )}
           </form>
@@ -310,84 +219,12 @@ export default function ResumePage() {
           </p>
         </div>
 
-        {/* Status Section */}
-        {status && (
+        {/* Parsed Summary Section */}
+        {parsedSummary && (
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-lg p-8 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Step 2: Processing Status</h2>
-            
-            <div className="space-y-4">
-              {/* Status Indicator */}
-              <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg">
-                <div className="text-3xl">
-                  {status.status === "pending" && "⏳"}
-                  {status.status === "processing" && "⚙️"}
-                  {status.status === "completed" && "✅"}
-                  {status.status === "failed" && "❌"}
-                </div>
-                <div>
-                  <p className="text-white font-semibold capitalize">{status.status}</p>
-                  <p className="text-slate-400 text-sm">{statusMessage}</p>
-                </div>
-              </div>
-
-              {/* Job ID */}
-              <p className="text-xs text-slate-400">
-                Job ID: <span className="font-mono text-slate-300">{jobId}</span>
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                {status.status === "pending" && (
-                  <button
-                    onClick={checkStatus}
-                    className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition"
-                  >
-                    Check Status Now
-                  </button>
-                )}
-
-                {status.status === "completed" && (
-                  <>
-                    {matches.length === 0 && (
-                      <button
-                        onClick={handleMatch}
-                        className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50"
-                        disabled={matchLoading}
-                      >
-                        {matchLoading ? "Finding Matches..." : "Find Matching Jobs"}
-                      </button>
-                    )}
-                  </>
-                )}
-
-                {status.status === "failed" && (
-                  <button
-                    onClick={() => {
-                      setStatus(null);
-                      setFile(null);
-                      setJobId("");
-                    }}
-                    className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition"
-                  >
-                    Try Again
-                  </button>
-                )}
-              </div>
-
-              {/* Parsed Resume Preview */}
-              {status.resume && status.status === "completed" && (
-                <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-                  <p className="text-sm text-slate-300 font-semibold mb-2">Resume Summary:</p>
-                  <div className="text-xs text-slate-400 space-y-1">
-                    {Object.entries(status.resume).map(([key, value]) => (
-                      <p key={key}>
-                        <span className="text-slate-300 font-medium capitalize">{key}:</span>{" "}
-                        {typeof value === "object" ? JSON.stringify(value) : String(value)}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <h2 className="text-xl font-semibold text-white mb-4">Resume Analysis</h2>
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <p className="text-slate-300 text-sm">{parsedSummary}</p>
             </div>
           </div>
         )}
@@ -414,7 +251,7 @@ export default function ResumePage() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-cyan-400">
-                        {Math.round((match.match_score || 0) * 100)}%
+                        {Math.round((match.score || match.match_score || 0) * 100)}%
                       </p>
                       <p className="text-xs text-slate-400">Match Score</p>
                     </div>
@@ -430,36 +267,6 @@ export default function ResumePage() {
                       </span>
                     )}
                   </div>
-
-                  {match.matched_count !== undefined && match.total_requirements !== undefined && (
-                    <div className="mb-4 p-3 bg-white/5 rounded border border-white/10">
-                      <p className="text-xs text-slate-300 font-semibold mb-2">
-                        Requirements Match: {match.matched_count} / {match.total_requirements}
-                      </p>
-                      <div className="w-full bg-white/10 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full"
-                          style={{
-                            width: `${(match.matched_count / match.total_requirements) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {match.gaps && match.gaps.length > 0 && (
-                    <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded">
-                      <p className="text-xs text-yellow-300 font-semibold mb-2">Skill Gaps:</p>
-                      <ul className="text-xs text-yellow-200 space-y-1">
-                        {match.gaps.slice(0, 3).map((gap, i) => (
-                          <li key={i}>• {gap.skill || gap.requirement || "Unknown"}</li>
-                        ))}
-                        {match.gaps.length > 3 && (
-                          <li className="text-yellow-300">and {match.gaps.length - 3} more...</li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
 
                   <button
                     onClick={() => {
@@ -478,7 +285,7 @@ export default function ResumePage() {
         )}
 
         {/* Empty State */}
-        {!status && (
+        {!uploading && matches.length === 0 && !status && (
           <InfoMessage message="Upload your resume to get started with intelligent job matching!" />
         )}
       </div>
