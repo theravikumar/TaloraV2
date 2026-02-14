@@ -56,10 +56,10 @@ class MatchService:
             jobs = self.job_service.get_all_jobs()
         
         # Match using existing matcher
-        matches = self.matcher.match(resume.parsed_data, jobs)
+        matches = self.matcher.match_jobs(resume.parsed_data, jobs)
         
         # Sort by score
-        matches.sort(key=lambda x: x["match_score"], reverse=True)
+        matches.sort(key=lambda x: x["score"], reverse=True)
         
         # Cache results
         self._cache_matches(db, resume_id, matches)
@@ -77,7 +77,7 @@ class MatchService:
             result = MatchResult(
                 resume_id=resume_id,
                 job_id=match["job"]["id"],
-                match_score=match["match_score"],
+                match_score=match["score"],
                 matched_requirements=match.get("matched_requirements", []),
                 gaps=match.get("gaps", [])
             )

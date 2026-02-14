@@ -10,7 +10,7 @@ from .gemini_client import GeminiClient
 from .ollama_client import OllamaClient
 
 
-UseCase = Literal["job_extraction", "resume_normalization", "match_explanation", "resume_feedback"]
+UseCase = Literal["job_extraction", "resume_normalization", "match_explanation", "resume_feedback", "job_description_generation"]
 
 
 class LLMRouter:
@@ -22,6 +22,7 @@ class LLMRouter:
     
     Routing strategy:
     - job_extraction: Groq (fast, free) → Ollama (offline)
+    - job_description_generation: Groq (fast, free) → Ollama (offline)
     - resume_normalization: Gemini (accurate) → Ollama (offline)
     - match_explanation: Gemini (accurate, low volume) → Ollama
     - resume_feedback: Gemini (accurate) → Ollama
@@ -81,7 +82,7 @@ class LLMRouter:
             Exception: If all LLMs fail
         """
         
-        if use_case == "job_extraction":
+        if use_case in ["job_extraction", "job_description_generation"]:
             return self._route_job_extraction(prompt, system_prompt, temperature, max_tokens)
         elif use_case in ["resume_normalization", "match_explanation", "resume_feedback"]:
             return self._route_high_quality(prompt, system_prompt, temperature, max_tokens)

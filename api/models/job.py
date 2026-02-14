@@ -25,6 +25,13 @@ class JobDetail(BaseModel):
     requirements_count: int
     description: Optional[str] = None
     requirements: Optional[List[Dict[str, Any]]] = None
+    
+    # New fields
+    job_url: Optional[str] = None
+    job_description: Optional[str] = None
+    posted_date: Optional[str] = None
+    salary: Optional[str] = None
+    work_mode: Optional[str] = None
 
 
 class JobListResponse(BaseModel):

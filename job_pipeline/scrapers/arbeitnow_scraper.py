@@ -81,7 +81,7 @@ class ArbeitNowScraper:
                 'company_name': raw_job.get('company_name', 'Unknown'),
                 'company_url': None,
                 'job_title': raw_job.get('title', 'Unknown'),
-                'location': ', '.join(raw_job.get('location', ['Remote'])),
+                'location': raw_job.get('location', 'Remote') if isinstance(raw_job.get('location'), str) else ', '.join(raw_job.get('location', ['Remote'])),
                 'work_mode': 'remote' if raw_job.get('remote') else 'onsite',
                 'employment_type': raw_job.get('job_types', ['full-time'])[0] if raw_job.get('job_types') else 'full-time',
                 'salary': None,

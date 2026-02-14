@@ -27,7 +27,7 @@ class RemoteOKScraper:
             "User-Agent": "TaloraV2 Job Matcher (Educational Project)"
         }
     
-    def scrape_all_jobs(self, limit: int = None) -> List[Dict]:
+    def scrape_all_jobs(self, limit: int = None, location: str = None) -> List[Dict]:
         """
         Scrape all jobs from RemoteOK API.
         
@@ -53,12 +53,22 @@ class RemoteOKScraper:
             
             # Normalize to our format
             normalized_jobs = []
-            for job in all_jobs[:limit] if limit else all_jobs:
+            for job in all_jobs:
+                # Filter by location if specified
+                if location:
+                    job_loc = job.get('location', '').lower()
+                    if location.lower() not in job_loc:
+                        continue
+                
                 normalized = self._normalize_job(job)
                 if normalized:
                     normalized_jobs.append(normalized)
+                
+                # Check limit
+                if limit and len(normalized_jobs) >= limit:
+                    break
             
-            print(f"[OK] Normalized {len(normalized_jobs)} jobs")
+            print(f"[OK] Normalized {len(normalized_jobs)} jobs matching '{location}'" if location else f"[OK] Normalized {len(normalized_jobs)} jobs")
             return normalized_jobs
             
         except Exception as e:

@@ -16,12 +16,13 @@ job_service = JobService()
 def search_jobs(
     keywords: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
-    domain: Optional[str] = Query(None),
+    employment_type: Optional[str] = Query(None),
+    ids: Optional[str] = Query(None, description="Comma-separated job IDs for smart search"),
     limit: int = Query(20, le=100),
     offset: int = Query(0, ge=0)
 ):
     """Search jobs with filters"""
-    results = job_service.search_jobs(keywords, location, domain, limit, offset)
+    results = job_service.search_jobs(keywords, location, employment_type, ids, limit, offset)
     return JobListResponse(**results)
 
 

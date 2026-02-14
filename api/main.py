@@ -19,20 +19,22 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict in production
+    allow_origins=["http://localhost:3000"],  # Allow frontend origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Import routers
-from api.routes import auth, resume, jobs, match
+from api.routes import auth, resume, jobs, match, autocomplete, smart_search
 
 # Include routers
 app.include_router(auth.router)
 app.include_router(resume.router)
+app.include_router(smart_search.router)
 app.include_router(jobs.router)
 app.include_router(match.router)
+app.include_router(autocomplete.router)
 
 
 @app.get("/")
