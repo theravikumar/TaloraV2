@@ -25,17 +25,17 @@ export default function JobDetailPage() {
       if (!jobId) {
         throw new Error("Invalid job ID");
       }
-      
+
       const data = await getJob(jobId);
-      
+
       if (!data) {
         throw new Error("Job not found");
       }
-      
+
       setJob(data);
     } catch (err) {
       console.error("Error fetching job:", err);
-      
+
       // Provide specific error messages
       let errorMessage = "Failed to load job. Please try again.";
       if (err.message.includes("404") || err.message.includes("not found")) {
@@ -49,7 +49,7 @@ export default function JobDetailPage() {
       } else {
         errorMessage = err.message || errorMessage;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -106,8 +106,20 @@ export default function JobDetailPage() {
               <p className="text-xl text-slate-300 mb-4">{job.company_name}</p>
             </div>
             {job.domain && (
-              <div className="px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm font-semibold">
-                {job.domain}
+              <div className="flex gap-3">
+                {job.job_url && (
+                  <a
+                    href={job.job_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-cyan-500/30 transition-all flex items-center gap-2 transform hover:-translate-y-0.5"
+                  >
+                    Apply Now ↗
+                  </a>
+                )}
+                <div className="px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 text-sm font-semibold flex items-center">
+                  {job.domain}
+                </div>
               </div>
             )}
           </div>
