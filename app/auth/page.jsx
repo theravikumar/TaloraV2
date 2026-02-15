@@ -1,3 +1,11 @@
+import { Suspense } from 'react';
 import AuthPage from "../auth";
-export default AuthPage;
+
+export default function Page() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AuthPage />
+        </Suspense>
+    );
+}
 

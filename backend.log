@@ -88463,3 +88463,10 @@ sqlalchemy.exc.PendingRollbackError: This Session's transaction has been rolled 
 [SQL: INSERT INTO resumes (id, user_id, filename, pdf_path, file_hash, parsed_data, is_active, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)]
 [parameters: ('6142e7db-87d3-43ca-a677-0a9dfa4809a6', None, '8575fee9-8e81-41f2-b6ce-f7a8e3e37450_ravi.pdf', 'data/uploads/temp/8575fee9-8e81-41f2-b6ce-f7a8e3e37450_ravi.pdf', '2de438e13d1433a93f62225e1ce1ca87c92e3105bc2d72f4d38664ef5923cf5b', '{"name": "Ravikumar", "email": "envel@periavi940107@gmail.com", "phone": "+91-9608676321", "years_of_experience": 7.5, "current_role": "Senior Machin ... (3284 characters truncated) ... : "ResNet based document classification pipeline", "tools": ["ResNet"], "constraints": [], "impact": "", "domain": "ML", "proficiency": "advanced"}]}', 1, '2026-02-14 22:56:37.332094')]
 (Background on this error at: https://sqlalche.me/e/20/gkpj) (Background on this error at: https://sqlalche.me/e/20/7s2a)
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [32404]
+INFO:     Stopping reloader process [9052]
+/home/ravi/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 9 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

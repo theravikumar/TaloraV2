@@ -1,7 +1,8 @@
-export async function middleware(request) {
-  // This is a basic middleware - Next.js App Router handles most routing automatically
-  // Protected routes are handled by the useAuth hook in components
-  return;
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  return NextResponse.next()
 }
 
 export const config = {
